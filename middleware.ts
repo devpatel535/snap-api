@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server"
 
-const PRODUCTION_URL = "https://snap-api-tawny.vercel.app"
+const PRODUCTION_URL = "https://snapapi.vercel.app"
+const ALLOWED_HOSTS = ["snapapi.vercel.app", "snap-api-tawny.vercel.app"]
 
 export function middleware(req: NextRequest) {
   const host = req.headers.get("host") ?? ""
 
   // Redirect any preview/branch Vercel URL to production
-  if (host !== "snap-api-tawny.vercel.app" && host.endsWith(".vercel.app")) {
+  if (!ALLOWED_HOSTS.includes(host) && host.endsWith(".vercel.app")) {
     const url = `${PRODUCTION_URL}${req.nextUrl.pathname}${req.nextUrl.search}`
     return NextResponse.redirect(url, { status: 308 })
   }
