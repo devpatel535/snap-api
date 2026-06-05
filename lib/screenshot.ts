@@ -1,18 +1,12 @@
-import chromium from "@sparticuz/chromium-min"
+import chromium from "@sparticuz/chromium"
 import puppeteer from "puppeteer-core"
-
-const REMOTE_CHROMIUM_URL = process.env.CHROMIUM_EXECUTABLE_URL
 
 async function getBrowser() {
   if (process.env.NODE_ENV === "production") {
-    const executablePath = REMOTE_CHROMIUM_URL
-      ? await chromium.executablePath(REMOTE_CHROMIUM_URL)
-      : await chromium.executablePath()
-
     return puppeteer.launch({
-      args: [...chromium.args, "--disable-gpu"],
-      executablePath,
-      headless: true,
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      headless: chromium.headless,
     })
   }
 
@@ -43,24 +37,13 @@ export interface ScreenshotOptions {
 }
 
 export async function captureScreenshot(opts: ScreenshotOptions): Promise<Buffer> {
-  const { url, width = 1280, height = 800, fullPage = false, retina = false, format = "png", quality = 90, waitFor = 0, blockAds = true } = opts
+  const { url, width = 1280, height = 800, fullPage = false, retina = false, format = "png", quality = 90, waitFor = 0 } = opts
 
   const browser = await getBrowser()
   try {
     const page = await browser.newPage()
-
-    if (blockAds) {
-      await page.setRequestInterception(true)
-      page.on("request", (req) => {
-        const resourceType = req.resourceType()
-        if (resourceType === "media" || resourceType === "font") req.abort()
-        else req.continue()
-      })
-    }
-
     await page.setViewport({ width, height, deviceScaleFactor: retina ? 2 : 1 })
     await page.goto(url, { waitUntil: "networkidle2", timeout: 30_000 })
-
     if (waitFor > 0) await new Promise((r) => setTimeout(r, Math.min(waitFor, 10_000)))
 
     const screenshot = await page.screenshot({
@@ -68,7 +51,6 @@ export async function captureScreenshot(opts: ScreenshotOptions): Promise<Buffer
       fullPage,
       quality: format !== "png" ? quality : undefined,
     })
-
     return Buffer.from(screenshot)
   } finally {
     await browser.close()
@@ -93,14 +75,10 @@ export async function capturePDF(opts: PDFOptions): Promise<Buffer> {
   try {
     const page = await browser.newPage()
     await page.goto(url, { waitUntil: "networkidle2", timeout: 30_000 })
-
     const pdf = await page.pdf({
-      format,
-      landscape,
-      printBackground,
+      format, landscape, printBackground,
       margin: { top: marginTop, bottom: marginBottom, left: marginLeft, right: marginRight },
     })
-
     return Buffer.from(pdf)
   } finally {
     await browser.close()

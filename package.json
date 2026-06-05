@@ -15,7 +15,7 @@
     "@auth/prisma-adapter": "^2.11.2",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
-    "@sparticuz/chromium-min": "^149.0.0",
+    "@sparticuz/chromium": "^149.0.0",
     "@stripe/stripe-js": "^9.7.0",
     "@types/pg": "^8.20.0",
     "lucide-react": "^1.17.0",
