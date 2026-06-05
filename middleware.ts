@@ -1,21 +1,30 @@
 import { NextRequest, NextResponse } from "next/server"
 
+const PRODUCTION_URL = "https://snap-api-tawny.vercel.app"
+
 export function middleware(req: NextRequest) {
-  const isDashboard = req.nextUrl.pathname.startsWith("/dashboard")
-  if (!isDashboard) return NextResponse.next()
+  const host = req.headers.get("host") ?? ""
 
-  // NextAuth v5 sets one of these cookies when logged in
-  const sessionToken =
-    req.cookies.get("authjs.session-token") ??
-    req.cookies.get("__Secure-authjs.session-token")
+  // Redirect any preview/branch Vercel URL to production
+  if (host !== "snap-api-tawny.vercel.app" && host.endsWith(".vercel.app")) {
+    const url = `${PRODUCTION_URL}${req.nextUrl.pathname}${req.nextUrl.search}`
+    return NextResponse.redirect(url, { status: 308 })
+  }
 
-  if (!sessionToken) {
-    return NextResponse.redirect(new URL("/login", req.url))
+  // Protect dashboard routes
+  if (req.nextUrl.pathname.startsWith("/dashboard")) {
+    const sessionToken =
+      req.cookies.get("authjs.session-token") ??
+      req.cookies.get("__Secure-authjs.session-token")
+
+    if (!sessionToken) {
+      return NextResponse.redirect(new URL("/login", PRODUCTION_URL))
+    }
   }
 
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
 }
