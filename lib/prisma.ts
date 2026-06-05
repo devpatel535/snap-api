@@ -1,14 +1,17 @@
 import { PrismaClient } from "@/app/generated/prisma/client"
 import { PrismaPg } from "@prisma/adapter-pg"
+import { Pool } from "pg"
 
 function createPrismaClient() {
-  // Strip parameters unsupported by the pg driver (channel_binding)
-  const rawUrl = process.env.DATABASE_URL ?? ""
-  const url = new URL(rawUrl)
-  url.searchParams.delete("channel_binding")
-  const connectionString = url.toString()
+  const connectionString = process.env.DATABASE_URL!
 
-  const adapter = new PrismaPg(connectionString)
+  const pool = new Pool({
+    connectionString,
+    ssl: { rejectUnauthorized: false },
+    max: 1,
+  })
+
+  const adapter = new PrismaPg(pool)
   return new PrismaClient({ adapter })
 }
 
